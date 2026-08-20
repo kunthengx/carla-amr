@@ -1,0 +1,42 @@
+# configs/amr_config.yaml
+# Dataset
+train_db_name: 'amr'
+fname: 'Data_Sample_Instant.xlsx'
+window_size: 50  # atau bisa pakai window_days: 7
+# window_days: 7    # jika pakai time-based window
+# step_hours: 24    # jika pakai time-based window
+
+# Model
+model_name: 'lstm'  # atau 'resnet18', 'transformer'
+model_kwargs:
+  features_dim: 128
+num_classes: 3  # Normal, Defect, Theft
+
+# Training
+epochs: 100
+batch_size: 128
+learning_rate: 0.001
+optimizer_kwargs:
+  lr: 0.001
+  weight_decay: 0.0001
+
+# Loss
+criterion_kwargs:
+  temperature: 0.5
+
+# Paths
+pretext_checkpoint: './checkpoints/amr_pretext_checkpoint.pth'
+pretext_model: './models/amr_pretext_model.pth'
+classification_checkpoint: './checkpoints/amr_classification_checkpoint.pth'
+classification_model: './models/amr_classification_model.pth'
+
+# Feature paths
+pretext_features_train_path: './features/amr_train_features.npy'
+pretext_features_test_path: './features/amr_test_features.npy'
+topk_neighbors_train_path: './neighbors/amr_train_topk.npy'
+bottomk_neighbors_train_path: './neighbors/amr_train_bottomk.npy'
+topk_neighbors_val_path: './neighbors/amr_val_topk.npy'
+bottomk_neighbors_val_path: './neighbors/amr_val_bottomk.npy'
+
+# Other
+update_cluster_head_only: False

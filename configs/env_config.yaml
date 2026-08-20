@@ -1,0 +1,5 @@
+# configs/env_config.yaml
+device: 'cpu'  # atau 'cuda' jika menggunakan GPU
+num_workers: 4
+pretext_batch_size: 128
+classification_batch_size: 128
