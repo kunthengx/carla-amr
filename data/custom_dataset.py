@@ -89,30 +89,6 @@ class AugmentedDataset(Dataset):
     def create_pairs(self):
 
         # =========================================================
-        # Ambil mean dan std
-        # =========================================================
-        mmean, sstd = self.dataset.get_info()
-
-        mmean = torch.tensor(
-            mmean,
-            dtype=torch.float32,
-            device=device
-        )
-
-        sstd = torch.tensor(
-            sstd,
-            dtype=torch.float32,
-            device=device
-        )
-
-        # Hindari pembagian dengan nol
-        sstd = torch.where(
-            sstd == 0,
-            torch.ones_like(sstd),
-            sstd
-        )
-
-        # =========================================================
         # Buat augmented samples
         # =========================================================
         for index in range(len(self.dataset)):
@@ -159,13 +135,13 @@ class AugmentedDataset(Dataset):
             self.samples[index] = {
 
                 'ts_org':
-                    (ts_org - mmean) / sstd,
+                    ts_org,
 
                 'ts_w_augment':
-                    (ts_w_augment - mmean) / sstd,
+                    ts_w_augment,
 
                 'ts_ss_augment':
-                    (ts_ss_augment - mmean) / sstd,
+                    ts_ss_augment,
 
                 'target':
                     ts_trg
@@ -214,6 +190,12 @@ class NeighborsDataset(Dataset):
         # self.create_pairs()
        
         dataset.transform = None
+        if hasattr(dataset, 'windows'):
+            from data.ra_dataset import SaveAugmentedDataset
+            dataset = SaveAugmentedDataset(
+                torch.as_tensor(dataset.windows, dtype=torch.float32),
+                torch.as_tensor(dataset.window_labels, dtype=torch.long)
+            )
         all_data = dataset.data.to(device)
         self.dataset = dataset
 

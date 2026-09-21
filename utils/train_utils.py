@@ -99,9 +99,10 @@ def self_sup_classification_train(train_loader, model, criterion, optimizer, epo
             b, w = anchors.shape
             h =1
 
-        anchors = anchors.reshape(b, h, w)
-        nneighbors = nneighbors.reshape(b, h, w)
-        fneighbors = fneighbors.reshape(b, h, w)
+        if anchors.ndim == 2:
+            anchors = anchors.unsqueeze(-1)
+            nneighbors = nneighbors.unsqueeze(-1)
+            fneighbors = fneighbors.unsqueeze(-1)
        
         if update_cluster_head_only: # Only calculate gradient for backprop of linear layer
             with torch.no_grad():

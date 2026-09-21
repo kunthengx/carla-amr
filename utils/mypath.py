@@ -4,6 +4,14 @@ import os
 
 class MyPath(object):
     @staticmethod
+    def resolve_dataset_file(database, filename):
+        """Resolve explicit paths before looking up a bare dataset filename."""
+        path = os.path.expanduser(os.fspath(filename))
+        if os.path.isabs(path) or os.path.dirname(path):
+            return os.path.abspath(path)
+        return os.path.join(MyPath.db_root_dir(database), path)
+
+    @staticmethod
     def db_root_dir(database=''):
         db_names = {'amr'}
         assert(database in db_names)
@@ -18,4 +26,3 @@ class MyPath(object):
             return fallback
         else:
             raise NotImplementedError
-

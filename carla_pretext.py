@@ -47,10 +47,10 @@ def main():
     # torch.set_num_interop_threads(1) 
 
     print(colored('CARLA Pretext stage --> ', 'yellow'))
-    p = create_config(args.config_env, args.config_exp, args.fname)
+    p = create_config(args.config_env, args.config_exp, args.fname, setup='pretext')
 
     model = get_model(p)
-    best_model = None
+    best_model = model
     model = model.to(device)
    
     # CUDNN
@@ -68,20 +68,22 @@ def main():
     # Load AMR-specific data when requested
     if p.get('train_db_name', None) == 'amr':
         from utils.amr_dataset import load_amr_data
-        amr_file = os.path.join(MyPath.db_root_dir('amr'), p['fname'])
+        amr_file = MyPath.resolve_dataset_file('amr', p['fname'])
         data_dict = load_amr_data(amr_file, window_size=p.get('window_size', 200))
 
         train_dataset = get_train_dataset(
             p, train_transforms, sanomaly,
             to_augmented_dataset=True,
             data=data_dict['train_data'],
-            label=data_dict['train_labels']
+            label=data_dict['train_labels'],
+            location_ids=data_dict['train_locations']
         )
 
         val_dataset = get_val_dataset(
             p, val_transforms, sanomaly, False,
             train_dataset.mean, train_dataset.std,
-            data_dict['val_data'], data_dict['val_labels']
+            data_dict['val_data'], data_dict['val_labels'],
+            location_ids=data_dict['val_locations']
         )
 
     else:

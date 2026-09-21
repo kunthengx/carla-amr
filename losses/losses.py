@@ -104,7 +104,9 @@ class PretextLoss(nn.Module):
         output:
             - loss: loss computed according to pretext triplet loss
         """
-        features_org, features_pos, features_subseq = torch.split(features, self.bs, dim=0)
+        if features.shape[0] == 0 or features.shape[0] % 3:
+            raise ValueError('Expected three equally sized nonempty batches of features.')
+        features_org, features_pos, features_subseq = features.chunk(3, dim=0)
 
         # Normalize features for stable distance computation
         anchor = F.normalize(features_org, dim=-1)

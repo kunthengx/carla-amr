@@ -187,7 +187,7 @@ def load_amr_data(
     all_data = []
     
     for sheet_name in excel_file.sheet_names:
-        df = pd.read_excel(file_path, sheet_name='Sheet1')
+        df = pd.read_excel(excel_file, sheet_name=sheet_name)
         all_data.append(df)
     
     # Gabungkan semua data

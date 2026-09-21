@@ -4,7 +4,7 @@ import yaml
 from easydict import EasyDict
 from utils.utils import mkdir_if_missing
 
-def create_config(config_file_env, config_file_exp, fname):
+def create_config(config_file_env, config_file_exp, fname=None, setup=None):
     # Config for environment path
     with open(config_file_env, 'r') as stream:
         env_cfg = yaml.safe_load(stream) or {}
@@ -19,6 +19,18 @@ def create_config(config_file_env, config_file_exp, fname):
     # Copy
     for k, v in config.items():
         cfg[k] = v
+
+    if setup is not None:
+        cfg['setup'] = setup
+        cfg['criterion'] = setup
+        if setup == 'classification':
+            cfg['criterion_kwargs'] = {
+                key: value for key, value in cfg.get('criterion_kwargs', {}).items()
+                if key in ('entropy_weight', 'inconsistency_weight')
+            }
+    fname = fname or cfg.get('fname')
+    if not fname:
+        raise ValueError('Specify --fname or fname in the experiment configuration.')
 
     # Set sensible defaults for missing keys to improve robustness
     cfg.setdefault('backbone', 'resnet_ts')

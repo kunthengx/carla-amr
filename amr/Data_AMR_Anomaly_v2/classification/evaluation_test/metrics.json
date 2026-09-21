@@ -1,0 +1,63 @@
+{
+  "split": "test",
+  "mapping_fitted_on": "val",
+  "head": 0,
+  "window_size": 1,
+  "num_test_windows": 78,
+  "cluster_to_class": {
+    "0": 0,
+    "1": 1,
+    "2": 2
+  },
+  "validation_cluster_class_counts": [
+    [
+      22,
+      1,
+      0
+    ],
+    [
+      24,
+      3,
+      2
+    ],
+    [
+      21,
+      3,
+      2
+    ]
+  ],
+  "report": {
+    "Normal": {
+      "precision": 0.6818181818181818,
+      "recall": 0.23809523809523808,
+      "f1-score": 0.35294117647058826,
+      "support": 63.0
+    },
+    "Defect": {
+      "precision": 0.038461538461538464,
+      "recall": 0.14285714285714285,
+      "f1-score": 0.06060606060606061,
+      "support": 7.0
+    },
+    "Theft": {
+      "precision": 0.1,
+      "recall": 0.375,
+      "f1-score": 0.15789473684210525,
+      "support": 8.0
+    },
+    "accuracy": 0.24358974358974358,
+    "macro avg": {
+      "precision": 0.2734265734265734,
+      "recall": 0.251984126984127,
+      "f1-score": 0.19048065797291805,
+      "support": 78.0
+    },
+    "weighted avg": {
+      "precision": 0.5644073874843105,
+      "recall": 0.24358974358974358,
+      "f1-score": 0.3067012107259786,
+      "support": 78.0
+    }
+  },
+  "anomalies_predicted_normal": 7
+}

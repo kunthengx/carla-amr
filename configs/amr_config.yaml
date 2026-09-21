@@ -2,7 +2,7 @@
 # Dataset
 train_db_name: 'amr'
 fname: 'Data_AMR_Anomaly_v2.xlsx'
-window_size: 7  # atau bisa pakai window_days: 7
+window_size: 1  # Dataset saat ini hanya memiliki satu record per pelanggan
 num_neighbors: 10
 
 # Model

@@ -1,0 +1,46 @@
+num_neighbors = 10
+CARLA Self-supervised Classification stage --> 
+
+- Get dataset and dataloaders for amr dataset - timeseries anomaly-injection-v2-complete/sample_output/Data_AMR_Anomaly_v2.xlsx
+Total data: 518 samples dari 518 pelanggan
+
+=== GROUP SPLIT BY CUSTOMER ===
+Total samples  : 518
+Total customers: 518
+
+=== HASIL SPLIT ===
+Train: 362 samples dari 362 pelanggan
+Val  : 78 samples dari 78 pelanggan
+Test : 78 samples dari 78 pelanggan
+
+Class distribution train: [284  43  35]
+Class distribution val  : [67  7  4]
+Class distribution test : [63  7  8]
+Window size = 1, total windows = 362, customers = 362
+
+===== AMR DATASET DEBUG =====
+Split          : train+unlabeled
+Window size    : 1
+Raw samples    : 362
+Unique customer: 362
+Total windows  : 362
+Window shape   : (1, 31)
+=============================
+
+Window size = 1, total windows = 78, customers = 78
+
+===== AMR DATASET DEBUG =====
+Split          : val
+Window size    : 1
+Raw samples    : 78
+Unique customer: 78
+Total windows  : 78
+Window shape   : (1, 31)
+=============================
+
+-- Train samples size: 724 - Test samples size: 78
+
+- Model initialisation
+-- Model initialised from last checkpoint: /home/kunthengx/Documents/CARLA/amr/Data_AMR_Anomaly_v2/classification/checkpoint.pth.tar
+
+- Training:

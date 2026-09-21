@@ -38,7 +38,7 @@ FLAGS.add_argument('--fname', help='Config the file name of Dataset')
 def main():
     global best_f1
     args = FLAGS.parse_args()
-    p = create_config(args.config_env, args.config_exp, args.fname)
+    p = create_config(args.config_env, args.config_exp, args.fname, setup='classification')
     print("num_neighbors =", p.get('num_neighbors', 'NOT FOUND'))
     print(colored('CARLA Self-supervised Classification stage --> ', 'yellow'))
 
@@ -56,20 +56,22 @@ def main():
     if p['train_db_name'] == 'amr':
         from utils.amr_dataset import load_amr_data
     
-    amr_file = os.path.join(MyPath.db_root_dir('amr'), p['fname'])
+    amr_file = MyPath.resolve_dataset_file('amr', p['fname'])
     data_dict = load_amr_data(amr_file, window_size=p.get('window_size', 200))
     
     base_dataset = get_train_dataset(
         p, train_transformations, sanomaly,
         to_augmented_dataset=True,
         data=data_dict['train_data'],
-        label=data_dict['train_labels']
+        label=data_dict['train_labels'],
+            location_ids=data_dict['train_locations']
     )
     
     val_dataset = get_val_dataset(
         p, val_transformations, sanomaly, False,
         base_dataset.mean, base_dataset.std,
-        data_dict['val_data'], data_dict['val_labels']
+        data_dict['val_data'], data_dict['val_labels'],
+            location_ids=data_dict['val_locations']
     )
 
     val_dataloader = get_val_dataloader(p, val_dataset)
@@ -141,7 +143,9 @@ def main():
 
         if rep_f1 > best_f1:
             best_f1 = rep_f1
-            nomral_label = majority_label
+            normal_label = int(majority_label)
+            best_loss_head = int(lowest_loss_head)
+            best_loss = float(lowest_loss)
             # print('New Checkpoint ...')
             torch.save({'model': model.module.state_dict(), 'head': best_loss_head, 'normal_label': normal_label}, p['classification_model'])
             torch.save({'optimizer': optimizer.state_dict(), 'model': model.state_dict(),

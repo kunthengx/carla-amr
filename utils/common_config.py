@@ -27,6 +27,9 @@ def get_criterion(p):
 
 
 def get_feature_dimensions_backbone(p):
+    if p.get('train_db_name') == 'amr':
+        return 128
+
     if p['backbone'] == 'resnet18':
         return 8
 
@@ -119,14 +122,15 @@ def get_model(p, pretrain_path=None):
     return model
 
 def get_amr_dataset(p, transform=None, sanomaly=None, to_augmented_dataset=True, 
-                    split='train+unlabeled', data=None, label=None):
+                    split='train+unlabeled', data=None, label=None,
+                    location_ids=None, mean=None, std=None):
     """Membuat dataset AMR"""
     from utils.amr_dataset import AMR3PhaseDataset, load_amr_data
     
-    location_ids = None
+    split = split or 'train+unlabeled'
     if data is None:
         # Load data dari file
-        file_path = os.path.join(MyPath.db_root_dir('amr'), p['fname'])
+        file_path = MyPath.resolve_dataset_file('amr', p['fname'])
         data_dict = load_amr_data(file_path, window_size=p['window_size'])
         
         if split == 'train' or split == 'train+unlabeled':
@@ -142,6 +146,9 @@ def get_amr_dataset(p, transform=None, sanomaly=None, to_augmented_dataset=True,
             label = data_dict['test_labels']
             location_ids = data_dict['test_locations']
     
+    if location_ids is None:
+        location_ids = np.zeros(len(data), dtype=np.int64)
+
     dataset = AMR3PhaseDataset(
         dataframe=None,
         data=data,
@@ -149,6 +156,9 @@ def get_amr_dataset(p, transform=None, sanomaly=None, to_augmented_dataset=True,
         location_ids=location_ids if location_ids is not None else np.zeros(len(data)),
         window_size=p.get('window_size', 7),
         transform=transform,
+        sanomaly=sanomaly,
+        mean=mean,
+        std=std,
         is_train=(split == 'train' or split == 'train+unlabeled')
     )
 
@@ -172,7 +182,8 @@ def get_train_dataset(
     to_neighbors_dataset=False,
     split=None,
     data=None,
-    label=None
+    label=None,
+    location_ids=None
 ):
 
     if p['train_db_name'] == 'amr':
@@ -183,7 +194,8 @@ def get_train_dataset(
             False,
             split,
             data,
-            label
+            label,
+            location_ids=location_ids
         )
 
         if to_augmented_dataset:
@@ -201,6 +213,7 @@ def get_aug_train_dataset(p, transform, to_neighbors_dataset=False):
         p['contrastive_dataset'],
         weights_only=False
     )
+    dataset = dataloader.dataset
     if to_neighbors_dataset:  # Dataset returns a ts and one of its nearest neighbors.
         from data.custom_dataset import NeighborsDataset
         N_indices = np.load(p['topk_neighbors_train_path'])
@@ -211,11 +224,14 @@ def get_aug_train_dataset(p, transform, to_neighbors_dataset=False):
 
 
 def get_val_dataset(p, transform=None, sanomaly=None, to_neighbors_dataset=False,
-                    mean_data=None, std_data=None, data=None, label=None):
+                    mean_data=None, std_data=None, data=None, label=None, location_ids=None):
     # Base dataset
     # Accept either train_db_name or val_db_name pointing to 'amr'
     if p.get('train_db_name') == 'amr' or p.get('val_db_name') == 'amr':
-        return get_amr_dataset(p, transform, sanomaly, False, 'val', data, label)
+        dataset = get_amr_dataset(
+            p, transform, sanomaly, False, 'val', data, label,
+            location_ids=location_ids, mean=mean_data, std=std_data
+        )
 
     else:
         raise ValueError('Invalid validation dataset {}'.format(p.get('val_db_name')))
@@ -225,12 +241,14 @@ def get_val_dataset(p, transform=None, sanomaly=None, to_neighbors_dataset=False
         from data.custom_dataset import NeighborsDataset
         N_indices = np.load(p['topk_neighbors_val_path'])
         F_indices = np.load(p['bottomk_neighbors_val_path'])
-        dataset = NeighborsDataset(dataset, transform, N_indices, F_indices, 5)  # Only use 5
+        dataset = NeighborsDataset(dataset, transform, N_indices, F_indices, p)
 
     return dataset
 
 
 def get_train_dataloader(p, dataset):
+    if len(dataset) == 0:
+        raise ValueError('Training dataset has no windows. Reduce window_size or provide more records per customer.')
     drop_last = True if len(dataset) >= p['batch_size'] else False
     return torch.utils.data.DataLoader(dataset, num_workers=p['num_workers'],
                                        batch_size=p['batch_size'], pin_memory=False, collate_fn=collate_custom,
@@ -238,7 +256,9 @@ def get_train_dataloader(p, dataset):
 
 
 def get_val_dataloader(p, dataset):
-    drop_last = True if len(dataset) >= p['batch_size'] else False
+    if len(dataset) == 0:
+        raise ValueError('Validation dataset has no windows. Check records per customer and window_size.')
+    drop_last = False
     return torch.utils.data.DataLoader(dataset, num_workers=p['num_workers'],
                                        batch_size=p['batch_size'], pin_memory=False, collate_fn=collate_custom,
                                        drop_last=drop_last, shuffle=False)

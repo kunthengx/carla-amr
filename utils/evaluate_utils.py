@@ -71,10 +71,13 @@ def get_predictions(p, dataloader, model, return_features=False, is_training=Fal
         else:
             targets.append(batch['target'])
 
-        res = model(ts.view(bs, h, w), forward_pass='return_all')
+        if ts.ndim == 2:
+            ts = ts.unsqueeze(-1)
+        ts = ts.float().to(next(model.parameters()).device)
+        res = model(ts, forward_pass='return_all')
         output = res['output']
         if return_features:
-            features[ptr: ptr+bs] = res['features']
+            features[ptr: ptr+bs] = res['features'].detach().cpu()
             ptr += bs
         for i, output_i in enumerate(output):
             predictions[i].append(torch.argmax(output_i, dim=1))
@@ -181,11 +184,12 @@ def pr_evaluate(all_predictions, class_names=None,
 
     scores = 1-np.array(probs)[:,majority_label]
     # labels = np.array(targets).tolist() CUDA
-    labels = np.array(targets.cpu().numpy()).tolist()
+    labels = (targets.cpu().numpy() != 0).astype(np.int64).tolist()
 
     precision, recall, thresholds = precision_recall_curve(labels, scores, pos_label=1)
     try:
-        f1_score = 2*precision*recall / (precision+recall)
+        f1_score = np.divide(2 * precision * recall, precision + recall,
+                             out=np.zeros_like(precision), where=(precision + recall) != 0)
         if np.isnan(f1_score).any():
             f1_score = np.nan_to_num(f1_score)
             print('f1: Nan --> 0')
