@@ -122,6 +122,7 @@ def get_amr_dataset(p, transform=None, sanomaly=None, to_augmented_dataset=True,
     """Membuat dataset AMR"""
     from utils.amr_dataset import AMR3PhaseDataset, load_amr_data
     
+    location_ids = None
     if data is None:
         # Load data dari file
         file_path = os.path.join(MyPath.db_root_dir('amr'), p['fname'])
@@ -130,21 +131,35 @@ def get_amr_dataset(p, transform=None, sanomaly=None, to_augmented_dataset=True,
         if split == 'train' or split == 'train+unlabeled':
             data = data_dict['train_data']
             label = data_dict['train_labels']
+            location_ids = data_dict['train_locations']
         elif split == 'val':
             data = data_dict['val_data']
             label = data_dict['val_labels']
+            location_ids = data_dict['val_locations']
         else:  # test
             data = data_dict['test_data']
             label = data_dict['test_labels']
+            location_ids = data_dict['test_locations']
     
     dataset = AMR3PhaseDataset(
+        dataframe=None,
         data=data,
         labels=label,
-        location_ids=np.zeros(len(data)),  # placeholder
-        window_size=p.get('window_size', 200),
+        location_ids=location_ids if location_ids is not None else np.zeros(len(data)),
+        window_size=p.get('window_size', 7),
         transform=transform,
         is_train=(split == 'train' or split == 'train+unlabeled')
     )
+
+    print("\n===== AMR DATASET DEBUG =====")
+    print("Split          :", split)
+    print("Window size    :", p.get('window_size', 7))
+    print("Raw samples    :", len(data))
+    print("Unique customer:", len(np.unique(location_ids)))
+    print("Total windows  :", len(dataset))
+    if len(dataset) > 0:
+        print("Window shape   :", dataset.windows[0].shape)
+    print("=============================\n")
     
     return dataset
 
@@ -181,7 +196,10 @@ def get_train_dataset(
     )
 
 def get_aug_train_dataset(p, transform, to_neighbors_dataset=False):
-    dataloader = torch.load(p['contrastive_dataset'])
+    dataloader = torch.load(
+        p['contrastive_dataset'],
+        weights_only=False
+    )
     if to_neighbors_dataset:  # Dataset returns a ts and one of its nearest neighbors.
         from data.custom_dataset import NeighborsDataset
         N_indices = np.load(p['topk_neighbors_train_path'])

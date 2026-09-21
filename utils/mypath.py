@@ -9,12 +9,12 @@ class MyPath(object):
         assert(database in db_names)
 
         if database == 'amr':
-            preferred = '/datasets/amr'
+            preferred = '/home/kunthengx/Documents/CARLA/anomaly-injection-v2-complete/sample_output/'
             if os.path.exists(preferred):
                 return preferred
             # Fallback to datasets folder inside the repository
             repo_path = os.getcwd()
-            fallback = os.path.join(repo_path, 'datasets', 'amr')
+            fallback = os.path.join(repo_path, 'sample_output')
             return fallback
         else:
             raise NotImplementedError

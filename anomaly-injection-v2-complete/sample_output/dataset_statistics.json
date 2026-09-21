@@ -1,0 +1,20 @@
+{
+  "rows_original": 528,
+  "rows_after_daily_aggregation": 518,
+  "rows_output": 518,
+  "anomalies_injected": 104,
+  "label_distribution": {
+    "0": 414,
+    "1": 57,
+    "2": 47
+  },
+  "anomaly_type_distribution": {
+    "current_bypass_theft": 31,
+    "phase_loss": 17,
+    "intermittent_theft": 16,
+    "voltage_imbalance": 12,
+    "pf_manipulation": 11,
+    "meter_defect_drift": 9,
+    "neutral_current_leakage": 8
+  }
+}

@@ -200,7 +200,7 @@ class AugmentedDataset(Dataset):
     Returns a ts with one of its neighbors.
 """
 class NeighborsDataset(Dataset):
-    def __init__(self, dataset, transform, N_indices, F_indices, p):
+    def __init__(self, dataset, transform, N_indices, F_indices, p, sanomaly=None):
         super(NeighborsDataset, self).__init__()
         
         if isinstance(transform, dict):
@@ -211,7 +211,7 @@ class NeighborsDataset(Dataset):
             self.augmentation_transform = transform
 
         self.subseq_anomaly = sanomaly
-        self.create_pairs()
+        # self.create_pairs()
        
         dataset.transform = None
         all_data = dataset.data.to(device)
@@ -219,10 +219,16 @@ class NeighborsDataset(Dataset):
 
         NN_indices = N_indices.copy() # Nearest neighbor indices (np.array  [len(dataset) x k])
         FN_indices = F_indices.copy()  # Nearest neighbor indices (np.array  [len(dataset) x k])
+
+        num_neighbors = p.get('num_neighbors', 10)
+
         if p['num_neighbors'] is not None:
             self.NN_indices = NN_indices[:, :p['num_neighbors']]
             self.FN_indices = FN_indices[:, -p['num_neighbors']:]
-        #assert( int(self.indices.shape[0]/4) == len(self.dataset) )
+
+        else:
+            self.NN_indices = NN_indices
+            self.FN_indices = FN_indices
 
         self.dataset.data = dataset.data.to(device)
         self.dataset.targets = dataset.targets.to(device)

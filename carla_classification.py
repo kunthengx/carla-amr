@@ -39,6 +39,7 @@ def main():
     global best_f1
     args = FLAGS.parse_args()
     p = create_config(args.config_env, args.config_exp, args.fname)
+    print("num_neighbors =", p.get('num_neighbors', 'NOT FOUND'))
     print(colored('CARLA Self-supervised Classification stage --> ', 'yellow'))
 
     # CUDNN

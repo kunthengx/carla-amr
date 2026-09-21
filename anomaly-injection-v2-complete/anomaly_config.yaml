@@ -1,0 +1,45 @@
+seed: 42
+columns:
+  customer_id: LOCATION_CODE
+  timestamp: READ_DATE
+  label: label
+aggregation:
+  enabled: true
+  frequency: "1D"
+  numeric_method: median
+  preserve_label: true
+injection:
+  enabled: true
+  anomaly_fraction: 0.20
+  allow_multiple_anomalies_per_row: false
+  protect_existing_anomalies: true
+  class_mapping: {normal: 0, defect: 1, theft: 2}
+  type_weights:
+    current_bypass_theft: 0.24
+    intermittent_theft: 0.18
+    phase_loss: 0.14
+    voltage_imbalance: 0.12
+    pf_manipulation: 0.10
+    neutral_current_leakage: 0.10
+    meter_defect_drift: 0.12
+parameters:
+  current_bypass_theft: {reduction_min: 0.35, reduction_max: 0.75}
+  intermittent_theft: {reduction_min: 0.20, reduction_max: 0.60, burst_min: 2, burst_max: 5}
+  phase_loss: {residual_min: 0.00, residual_max: 0.08}
+  voltage_imbalance: {reduction_min: 0.10, reduction_max: 0.20}
+  pf_manipulation: {pf_min: 0.20, pf_max: 0.65}
+  neutral_current_leakage: {multiplier_min: 1.8, multiplier_max: 4.0}
+  meter_defect_drift: {drift_min: 0.03, drift_max: 0.15}
+physics:
+  enforce_bounds: true
+  recompute_power: true
+  voltage_min: 100.0
+  voltage_max: 300.0
+  frequency_min: 45.0
+  frequency_max: 55.0
+  pf_min: 0.0
+  pf_max: 1.0
+windowing:
+  enabled: false
+  size: 7
+  stride: 1

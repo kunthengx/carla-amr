@@ -43,16 +43,33 @@ def create_config(config_file_env, config_file_exp, fname):
     cfg.setdefault('batch_size', cfg.get('batch_size', 128))
     cfg.setdefault('num_workers', cfg.get('num_workers', 4))
     cfg.setdefault('epochs', cfg.get('epochs', 100))
+    cfg.setdefault('num_neighbors', 10)
     cfg.setdefault('val_db_name', cfg.get('train_db_name'))
 
-    # Set paths for pretext task (These directories are needed in every stage)
+    # Set paths for pretext task
+    # Ambil nama dataset tanpa path dan tanpa ekstensi .xlsx
+    dataset_name = os.path.splitext(os.path.basename(fname))[0]
+
     base_dir = os.path.join(root_dir, cfg['train_db_name'])
-    pretext_dir = os.path.join(base_dir, fname+'/pretext')
+
+    pretext_dir = os.path.join(
+        base_dir,
+        dataset_name,
+        'pretext'
+    )
+
     mkdir_if_missing(base_dir)
     mkdir_if_missing(pretext_dir)
+
     cfg['pretext_dir'] = pretext_dir
+
+    # Tetap simpan fname asli karena digunakan untuk membaca dataset
     cfg['fname'] = fname
-    cfg['pretext_checkpoint'] = os.path.join(pretext_dir, 'checkpoint.pth.tar')
+
+    cfg['pretext_checkpoint'] = os.path.join(
+        pretext_dir,
+        'checkpoint.pth.tar'
+    )
     cfg['pretext_model'] = os.path.join(pretext_dir, 'model.pth.tar')
     cfg['topk_neighbors_train_path'] = os.path.join(pretext_dir, 'topk-train-neighbors.npy')
     cfg['bottomk_neighbors_train_path'] = os.path.join(pretext_dir, 'bottomk-train-neighbors.npy')
@@ -67,15 +84,39 @@ def create_config(config_file_env, config_file_exp, fname):
 
     if cfg.get('setup') == 'classification':
         base_dir = os.path.join(root_dir, cfg['train_db_name'])
-        classification_dir = os.path.join(base_dir, fname+ '/classification')
+
+        classification_dir = os.path.join(
+            base_dir,
+            dataset_name,
+            'classification'
+        )
+
         mkdir_if_missing(base_dir)
         mkdir_if_missing(classification_dir)
-        cfg['classification_dir'] = classification_dir
-        cfg['classification_checkpoint'] = os.path.join(classification_dir, 'checkpoint.pth.tar')
-        cfg['classification_model'] = os.path.join(classification_dir, 'model.pth.tar')
-        cfg['classification_trainfeatures'] = os.path.join(classification_dir, 'classification_traintfeatures.csv')
-        cfg['classification_trainprobs'] = os.path.join(classification_dir, 'classification_trainprobs.csv')
-        cfg['classification_testfeatures'] = os.path.join(classification_dir, 'classification_testtfeatures.csv')
-        cfg['classification_testprobs'] = os.path.join(classification_dir, 'classification_testprobs.csv')
 
+        cfg['classification_dir'] = classification_dir
+        cfg['classification_checkpoint'] = os.path.join(
+            classification_dir,
+            'checkpoint.pth.tar'
+        )
+        cfg['classification_model'] = os.path.join(
+            classification_dir,
+            'model.pth.tar'
+        )
+        cfg['classification_trainfeatures'] = os.path.join(
+            classification_dir,
+            'classification_traintfeatures.csv'
+        )
+        cfg['classification_trainprobs'] = os.path.join(
+            classification_dir,
+            'classification_trainprobs.csv'
+        )
+        cfg['classification_testfeatures'] = os.path.join(
+            classification_dir,
+            'classification_testtfeatures.csv'
+        )
+        cfg['classification_testprobs'] = os.path.join(
+            classification_dir,
+            'classification_testprobs.csv'
+        )
     return cfg 

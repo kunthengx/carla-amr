@@ -1,6 +1,4 @@
 carla-env-py311/
-CARLA_AMR.zip
-figs
-.DS_Store
 __pycache__/
-*.pyc
+=5.3.1
+datasets/

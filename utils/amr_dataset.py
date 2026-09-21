@@ -12,15 +12,21 @@ class AMR3PhaseDataset(Dataset):
     """
     def __init__(
         self,
+        dataframe,
         data: np.ndarray,
         labels: np.ndarray,
         location_ids: np.ndarray,
         window_size: int = 50,
+        train=True,
         sanomaly=None,
         transform: Optional[callable] = None,
         is_train: bool = True,
         mean: Optional[np.ndarray] = None,
-        std: Optional[np.ndarray] = None
+        std: Optional[np.ndarray] = None,
+        anomaly_ratio=0.20,      # 20% pelanggan akan diinjeksi
+        defect_ratio=0.40,       # 40% anomaly = defect
+        theft_ratio=0.60,        # 60% anomaly = theft
+        random_seed=42
     ):
         """
         Args:
@@ -33,16 +39,18 @@ class AMR3PhaseDataset(Dataset):
             transform: Transformasi/augmentasi
             is_train: Flag training
             mean, std: Untuk normalisasi
+            anomaly_ratio, defect_ratio, theft_ratio: Rasio anomali untuk masing-masing kelas
+            random_seed: Seed untuk reproduksibilitas
         """
         self.data = data
         self.labels = labels
         self.location_ids = location_ids
-        # If the available series length is shorter than the requested window,
-        # use the full series as a single window to avoid empty datasets.
-        self.window_size = min(window_size, data.shape[0]) if data.shape[0] > 0 else window_size
+
+        self.window_size = window_size
+
         self.transform = transform
         self.is_train = is_train
-        self.sanomaly = sanomaly  # Simpan sanomaly untuk referensi jika diperlukan
+        self.sanomaly = sanomaly
         
         # Normalisasi data
         if is_train:
@@ -54,20 +62,78 @@ class AMR3PhaseDataset(Dataset):
             
         self.normalized_data = (data - self.mean) / self.std
         
-        # Buat sliding windows
+        # ============================================================
+        # SLIDING WINDOW PER PELANGGAN
+        # ============================================================
+
         self.windows = []
         self.window_labels = []
         self.window_locations = []
-        
-        # Build sliding windows; ensure at least one window when possible
-        n_available = len(self.normalized_data)
+
         ws = self.window_size
-        if n_available >= ws and ws > 0:
-            for i in range(n_available - ws + 1):
-                self.windows.append(self.normalized_data[i:i+ws])
-                # Label di akhir window
-                self.window_labels.append(labels[i+ws-1])
-                self.window_locations.append(location_ids[i+ws-1])
+
+        # Jangan membuat window lintas pelanggan
+        unique_locations = np.unique(self.location_ids)
+
+        for loc in unique_locations:
+
+            # Ambil index seluruh data milik pelanggan ini
+            loc_idx = np.where(self.location_ids == loc)[0]
+
+            loc_data = self.normalized_data[loc_idx]
+            loc_labels = self.labels[loc_idx]
+
+            n_loc = len(loc_data)
+
+            # Pelanggan harus mempunyai minimal ws data
+            if n_loc < ws:
+                continue
+
+            # Sliding window hanya dalam pelanggan yang sama
+            for start in range(0, n_loc - ws + 1):
+
+                end = start + ws
+
+                window = loc_data[start:end]
+
+                # Label window:
+                # jika ada anomaly di dalam window,
+                # gunakan label anomaly tertinggi
+                #
+                # 0 = normal
+                # 1 = defect
+                # 2 = theft
+                window_label = int(
+                    np.max(loc_labels[start:end])
+                )
+
+                self.windows.append(window)
+                self.window_labels.append(window_label)
+                self.window_locations.append(loc)
+
+        # Convert ke numpy
+        self.windows = np.asarray(
+            self.windows,
+            dtype=np.float32
+        )
+
+        self.window_labels = np.asarray(
+            self.window_labels,
+            dtype=np.int64
+        )
+
+        self.window_locations = np.asarray(
+            self.window_locations
+        )
+
+        print(
+            f"Window size = {ws}, "
+            f"total windows = {len(self.windows)}, "
+            f"customers = {len(unique_locations)}"
+        )
+        if n_available == 0:
+            print("No data available for windowing.")
+
         elif n_available > 0:
             # Use the whole sequence as a single window
             self.windows.append(self.normalized_data)
@@ -84,47 +150,6 @@ class AMR3PhaseDataset(Dataset):
     def get_info(self):
         return self.mean, self.std
     
-    """
-    def __getitem__(self, idx):
-        window = self.data[idx]
-    
-        # ===== TAMBAHKAN KODE INI =====
-        # Jika window adalah string, konversi ke array numerik
-        if isinstance(window, str):
-            # Coba parse string sebagai list angka
-            try:
-                # Contoh: "[1.2, 3.4, 5.6]" atau "1.2,3.4,5.6"
-                window = window.strip('[]').split(',')
-                window = np.array([float(x.strip()) for x in window], dtype=np.float32)
-            except:
-                # Jika gagal, buat array zeros sebagai fallback
-                print(f"Warning: Cannot parse string at index {idx}: {window[:50]}")
-                window = np.zeros(10, dtype=np.float32)  # Ganti 10 dengan dimensi yang sesuai
-        
-        # Jika window adalah list, konversi ke numpy array
-        elif isinstance(window, list):
-            window = np.array(window, dtype=np.float32)
-        
-        # Jika window adalah pandas Series atau DataFrame
-        elif hasattr(window, 'values'):
-            window = window.values.astype(np.float32)
-        
-        # Pastikan window adalah numpy array
-        if not isinstance(window, np.ndarray):
-            window = np.array(window, dtype=np.float32)
-        
-        # Konversi ke tensor PyTorch
-        if not isinstance(window, torch.Tensor):
-            window = torch.from_numpy(window).float()
-        
-        # ===== APPLY TRANSFORM =====
-        if self.transform is not None:
-            # Transform hanya untuk tensor
-            window = self.transform(window)
-        
-        return window
-    """
-
     def __getitem__(self, idx):
         window = self.windows[idx]
 
@@ -155,8 +180,8 @@ class AMR3PhaseDataset(Dataset):
 
 
 def load_amr_data(
-    file_path: str = 'home/kunthengx/Documents/CARLA/datasets/amr/Data_Sample_Instant.xlsx',
-    window_size: int = 50,
+    file_path: str = '/home/kunthengx/Documents/CARLA/anomaly-injection-v2-complete/sample_output/Data_AMR_Anomaly_v2.xlsx',
+    window_size: int = 1,
     train_ratio: float = 0.7,
     val_ratio: float = 0.15
 ) -> dict:
@@ -225,7 +250,7 @@ def load_amr_data(
         'POWER_EFFICIENCY', 'AVG_PF', 'REACTIVE_ACTIVE_RATIO', 'PF_STD'
     ]
 
-        # ============================================================
+    # ============================================================
     # SPLIT DATA BERDASARKAN PELANGGAN (GROUP SPLIT)
     # ============================================================
     #
@@ -260,36 +285,93 @@ def load_amr_data(
         # LABELING
         # ========================================================
 
-        labels = np.zeros(len(X), dtype=np.int64)
+        # --------------------------------------------------------
+        # PRIORITAS 1:
+        # Gunakan label yang sudah tersedia dari anomaly-injection-v2
+        # 0 = Normal
+        # 1 = Defect
+        # 2 = Theft
+        # --------------------------------------------------------
+        if 'label' in loc_data.columns:
 
-        # Defect
-        loc_currents = loc_data[
-            ['CURRENT_L1', 'CURRENT_L2', 'CURRENT_L3']
-        ].values
-
-        loc_avg_current = np.mean(loc_currents, axis=1)
-
-        neutral_high = (
-            (loc_data['CURRENT_N'] > 0.5) &
-            (
-                loc_data['CURRENT_N'] /
-                (loc_avg_current + 1e-8) > 0.3
+            labels = (
+                pd.to_numeric(loc_data['label'], errors='coerce')
+                .fillna(0)
+                .astype(np.int64)
+                .values
             )
-        )
 
-        voltage_low = (
-            (loc_data['VOLTAGE_L1'] < 180) |
-            (loc_data['VOLTAGE_L2'] < 180) |
-            (loc_data['VOLTAGE_L3'] < 180)
-        )
+            # Validasi label
+            valid_labels = np.isin(labels, [0, 1, 2])
 
-        labels[neutral_high | voltage_low] = 1
+            if not np.all(valid_labels):
+                invalid_values = np.unique(labels[~valid_labels])
 
-        # Theft
-        pf_low = loc_data['POWER_FACTOR_TOTAL'] < 0.5
-        power_negative = loc_data['ACTIVE_POWER_TOTAL'] < 0
+                raise ValueError(
+                    f"Label tidak valid ditemukan: {invalid_values}. "
+                    "Label yang diperbolehkan hanya 0, 1, dan 2."
+                )
 
-        labels[pf_low | power_negative] = 2
+        # --------------------------------------------------------
+        # PRIORITAS 2:
+        # Jika dataset tidak memiliki kolom label,
+        # gunakan heuristic/rule lama.
+        # --------------------------------------------------------
+        else:
+
+            labels = np.zeros(len(X), dtype=np.int64)
+
+            # ==========================
+            # DEFECT
+            # ==========================
+
+            loc_currents = loc_data[
+                ['CURRENT_L1', 'CURRENT_L2', 'CURRENT_L3']
+            ].values
+
+            loc_avg_current = np.mean(
+                loc_currents,
+                axis=1
+            )
+
+            neutral_high = (
+                (loc_data['CURRENT_N'] > 0.5)
+                &
+                (
+                    loc_data['CURRENT_N']
+                    /
+                    (loc_avg_current + 1e-8)
+                    > 0.3
+                )
+            )
+
+            voltage_low = (
+                (loc_data['VOLTAGE_L1'] < 180)
+                |
+                (loc_data['VOLTAGE_L2'] < 180)
+                |
+                (loc_data['VOLTAGE_L3'] < 180)
+            )
+
+            labels[
+                neutral_high | voltage_low
+            ] = 1
+
+            # ==========================
+            # THEFT
+            # ==========================
+
+            pf_low = (
+                loc_data['POWER_FACTOR_TOTAL'] < 0.5
+            )
+
+            power_negative = (
+                loc_data['ACTIVE_POWER_TOTAL'] < 0
+            )
+
+            labels[
+                pf_low | power_negative
+            ] = 2
 
         # ========================================================
         # SIMPAN SEMUA DATA TERLEBIH DAHULU
@@ -364,12 +446,15 @@ def load_amr_data(
 
     train_data = X_all[train_idx]
     train_labels = y_all[train_idx]
+    train_locations = groups[train_idx]
 
     val_data = X_all[val_idx]
     val_labels = y_all[val_idx]
+    val_locations = groups[val_idx]
 
     test_data = X_all[test_idx]
     test_labels = y_all[test_idx]
+    test_locations = groups[test_idx]
 
 
     # ============================================================
@@ -437,10 +522,16 @@ def load_amr_data(
     return {
         'train_data': train_data,
         'train_labels': train_labels,
+        'train_locations': train_locations,
+
         'val_data': val_data,
         'val_labels': val_labels,
+        'val_locations': val_locations,
+
         'test_data': test_data,
         'test_labels': test_labels,
+        'test_locations': test_locations,
+
         'features': feature_columns,
         'locations': all_locations
     }
