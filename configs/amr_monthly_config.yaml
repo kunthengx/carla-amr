@@ -1,0 +1,32 @@
+# Monthly daily measurements; use after monthly files are available.
+train_db_name: amr
+fname: datasets/amr/monthly
+window_size: 7
+num_neighbors: 10
+model_name: lstm
+model_kwargs:
+  features_dim: 128
+num_classes: 3
+epochs: 100
+batch_size: 128
+learning_rate: 0.001
+optimizer_kwargs:
+  lr: 0.001
+  weight_decay: 0.0001
+criterion_kwargs:
+  temperature: 0.5
+pretext_checkpoint: ./checkpoints/amr_pretext_checkpoint.pth
+pretext_model: ./models/amr_pretext_model.pth
+classification_checkpoint: ./checkpoints/amr_classification_checkpoint.pth
+classification_model: ./models/amr_classification_model.pth
+pretext_features_train_path: ./features/amr_train_features.npy
+pretext_features_test_path: ./features/amr_test_features.npy
+topk_neighbors_train_path: ./neighbors/amr_train_topk.npy
+bottomk_neighbors_train_path: ./neighbors/amr_train_bottomk.npy
+topk_neighbors_val_path: ./neighbors/amr_val_topk.npy
+bottomk_neighbors_val_path: ./neighbors/amr_val_bottomk.npy
+update_cluster_head_only: false
+num_workers: 0
+
+# 31 features x (mean, min, max) + reading_count = 94 inputs.
+daily_aggregation: true

@@ -69,21 +69,23 @@ def main():
     if p.get('train_db_name', None) == 'amr':
         from utils.amr_dataset import load_amr_data
         amr_file = MyPath.resolve_dataset_file('amr', p['fname'])
-        data_dict = load_amr_data(amr_file, window_size=p.get('window_size', 200))
+        data_dict = load_amr_data(amr_file, window_size=p.get('window_size', 200), daily_aggregation=p.get('daily_aggregation', False))
 
         train_dataset = get_train_dataset(
             p, train_transforms, sanomaly,
             to_augmented_dataset=True,
             data=data_dict['train_data'],
             label=data_dict['train_labels'],
-            location_ids=data_dict['train_locations']
+            location_ids=data_dict['train_locations'],
+            dates=data_dict['train_dates']
         )
 
         val_dataset = get_val_dataset(
             p, val_transforms, sanomaly, False,
             train_dataset.mean, train_dataset.std,
             data_dict['val_data'], data_dict['val_labels'],
-            location_ids=data_dict['val_locations']
+            location_ids=data_dict['val_locations'],
+            dates=data_dict['val_dates']
         )
 
     else:

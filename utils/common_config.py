@@ -48,7 +48,7 @@ def get_model(p, pretrain_path=None):
     if p['train_db_name'] == 'amr':
 
         lstm_backbone = LSTMBackbone(
-            input_dim=31,
+            input_dim=94 if p.get('daily_aggregation', False) else 31,
             hidden_dim=128,
             num_layers=2,
             dropout=0.2,
@@ -123,7 +123,7 @@ def get_model(p, pretrain_path=None):
 
 def get_amr_dataset(p, transform=None, sanomaly=None, to_augmented_dataset=True, 
                     split='train+unlabeled', data=None, label=None,
-                    location_ids=None, mean=None, std=None):
+                    location_ids=None, mean=None, std=None, dates=None):
     """Membuat dataset AMR"""
     from utils.amr_dataset import AMR3PhaseDataset, load_amr_data
     
@@ -131,26 +131,30 @@ def get_amr_dataset(p, transform=None, sanomaly=None, to_augmented_dataset=True,
     if data is None:
         # Load data dari file
         file_path = MyPath.resolve_dataset_file('amr', p['fname'])
-        data_dict = load_amr_data(file_path, window_size=p['window_size'])
+        data_dict = load_amr_data(file_path, window_size=p['window_size'], daily_aggregation=p.get('daily_aggregation', False))
         
         if split == 'train' or split == 'train+unlabeled':
             data = data_dict['train_data']
             label = data_dict['train_labels']
             location_ids = data_dict['train_locations']
+            dates = data_dict['train_dates']
         elif split == 'val':
             data = data_dict['val_data']
             label = data_dict['val_labels']
             location_ids = data_dict['val_locations']
+            dates = data_dict['val_dates']
         else:  # test
             data = data_dict['test_data']
             label = data_dict['test_labels']
             location_ids = data_dict['test_locations']
+            dates = data_dict['test_dates']
     
     if location_ids is None:
         location_ids = np.zeros(len(data), dtype=np.int64)
 
     dataset = AMR3PhaseDataset(
         dataframe=None,
+        dates=dates,
         data=data,
         labels=label,
         location_ids=location_ids if location_ids is not None else np.zeros(len(data)),
@@ -183,7 +187,8 @@ def get_train_dataset(
     split=None,
     data=None,
     label=None,
-    location_ids=None
+    location_ids=None,
+    dates=None
 ):
 
     if p['train_db_name'] == 'amr':
@@ -195,7 +200,7 @@ def get_train_dataset(
             split,
             data,
             label,
-            location_ids=location_ids
+            location_ids=location_ids, dates=dates
         )
 
         if to_augmented_dataset:
@@ -224,13 +229,13 @@ def get_aug_train_dataset(p, transform, to_neighbors_dataset=False):
 
 
 def get_val_dataset(p, transform=None, sanomaly=None, to_neighbors_dataset=False,
-                    mean_data=None, std_data=None, data=None, label=None, location_ids=None):
+                    mean_data=None, std_data=None, data=None, label=None, location_ids=None, dates=None):
     # Base dataset
     # Accept either train_db_name or val_db_name pointing to 'amr'
     if p.get('train_db_name') == 'amr' or p.get('val_db_name') == 'amr':
         dataset = get_amr_dataset(
             p, transform, sanomaly, False, 'val', data, label,
-            location_ids=location_ids, mean=mean_data, std=std_data
+            location_ids=location_ids, mean=mean_data, std=std_data, dates=dates
         )
 
     else:

@@ -62,6 +62,9 @@ def create_config(config_file_env, config_file_exp, fname=None, setup=None):
     # Ambil nama dataset tanpa path dan tanpa ekstensi .xlsx
     dataset_name = os.path.splitext(os.path.basename(fname))[0]
 
+    if cfg.get('daily_aggregation', False):
+        dataset_name += '_daily_stats'
+
     base_dir = os.path.join(root_dir, cfg['train_db_name'])
 
     pretext_dir = os.path.join(

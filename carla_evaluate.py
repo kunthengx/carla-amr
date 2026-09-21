@@ -44,7 +44,7 @@ def main():
     torch.set_num_threads(2)
     p = create_config(args.config_env, args.config_exp, args.fname, setup='classification')
     data = load_amr_data(MyPath.resolve_dataset_file('amr', p['fname']),
-                         window_size=p['window_size'])
+                         window_size=p['window_size'], daily_aggregation=p.get('daily_aggregation', False))
     mean = data['train_data'].mean(axis=0)
     std = data['train_data'].std(axis=0) + 1e-8
 
@@ -52,7 +52,7 @@ def main():
         return AMR3PhaseDataset(
             None, data[split + '_data'], data[split + '_labels'],
             data[split + '_locations'], window_size=p['window_size'],
-            is_train=False, mean=mean, std=std,
+            is_train=False, mean=mean, std=std, dates=data[split + '_dates'],
         )
 
     val, test = dataset('val'), dataset('test')

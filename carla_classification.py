@@ -57,21 +57,23 @@ def main():
         from utils.amr_dataset import load_amr_data
     
     amr_file = MyPath.resolve_dataset_file('amr', p['fname'])
-    data_dict = load_amr_data(amr_file, window_size=p.get('window_size', 200))
+    data_dict = load_amr_data(amr_file, window_size=p.get('window_size', 200), daily_aggregation=p.get('daily_aggregation', False))
     
     base_dataset = get_train_dataset(
         p, train_transformations, sanomaly,
         to_augmented_dataset=True,
         data=data_dict['train_data'],
         label=data_dict['train_labels'],
-            location_ids=data_dict['train_locations']
+            location_ids=data_dict['train_locations'],
+            dates=data_dict['train_dates']
     )
     
     val_dataset = get_val_dataset(
         p, val_transformations, sanomaly, False,
         base_dataset.mean, base_dataset.std,
         data_dict['val_data'], data_dict['val_labels'],
-            location_ids=data_dict['val_locations']
+            location_ids=data_dict['val_locations'],
+            dates=data_dict['val_dates']
     )
 
     val_dataloader = get_val_dataloader(p, val_dataset)
