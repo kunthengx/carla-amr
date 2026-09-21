@@ -1,10 +1,9 @@
 # configs/amr_config.yaml
 # Dataset
 train_db_name: 'amr'
-fname: 'Data_Sample_Instant.xlsx'
-window_size: 1  # Sequence saat ini: 1 record per pelanggan
-# window_days: 7    # jika pakai time-based window
-# step_hours: 24    # jika pakai time-based window
+fname: 'Data_AMR_Anomaly_v2.xlsx'
+window_size: 7  # atau bisa pakai window_days: 7
+num_neighbors: 10
 
 # Model
 model_name: 'lstm'  # atau 'resnet18', 'transformer'

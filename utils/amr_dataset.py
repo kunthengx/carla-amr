@@ -131,18 +131,8 @@ class AMR3PhaseDataset(Dataset):
             f"total windows = {len(self.windows)}, "
             f"customers = {len(unique_locations)}"
         )
-        if n_available == 0:
-            print("No data available for windowing.")
-
-        elif n_available > 0:
-            # Use the whole sequence as a single window
-            self.windows.append(self.normalized_data)
-            self.window_labels.append(labels[-1])
-            self.window_locations.append(location_ids[-1])
-            
-        self.windows = np.array(self.windows, dtype=np.float32)
-        self.window_labels = np.array(self.window_labels, dtype=np.int64)
-        self.window_locations = np.array(self.window_locations)
+        if len(self.windows) == 0:
+            print("No customer has enough data for the requested window size.")
         
     def __len__(self):
         return len(self.windows)

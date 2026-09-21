@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 
 from data.augment import NoiseTransformation, SubAnomaly
 from utils.collate import collate_custom
+from utils.mypath import MyPath
 
 from models.models import ContrastiveModel, ClusteringModel
 from models.lstm_time import LSTMBackbone
